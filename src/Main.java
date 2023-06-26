@@ -175,7 +175,7 @@ public class Main extends Application {
 
             //Timing variables
             int timer = 0;
-            final short speed = 8;
+            final short speed = 6;
 
             //Game variables
             DIR currentDir = DIR.DOWN;
@@ -184,6 +184,7 @@ public class Main extends Application {
             Pair<Integer, Integer> newSegmentCoors;
             boolean gameOver = false;
             int score = 0;
+            final double scoreMultiplier = 1.1;
 
             @Override
             public void handle(long now) {
@@ -244,19 +245,13 @@ public class Main extends Application {
 
                     if ( !gameOver )
                     {
-                        //Save head coordinates for the rest of the body
-                        Pair<Integer, Integer> headCoors = head.coordinates;
-
-                        //Move head
-                        updatePosition(head, dirValue, spriteLocations);
-
-                        //Move body
-                        moveSnakeBody(snake, spriteLocations, headCoors);
+                        //Move the snake
+                        moveSnake(snake, spriteLocations, dirValue);
 
                         //if apple eaten move apple and update score
                         if (ateApple) {
                             //Update score counter
-                            score = (int) Math.floor((score + 100) * 1.1);
+                            score = (int) Math.floor((score + 100) * scoreMultiplier);
                             scoreCounter.setText("Score: " + score);
 
                             //Move apple
@@ -409,64 +404,39 @@ public class Main extends Application {
         return null;
     }
 
+
     /**
-     * Moves a section of the snake in the desired direction
-     * @param seg Snake segment to be moved
-     * @param dir Direction to move segment in
+     * Move the snake in desired direction
+     * @param snake Snake to move
      * @param spriteLocations Location of all sprites in play field
+     * @param dir Direction to move represented by a pair of integers
      */
-    public void updatePosition(Segment seg, Pair<Integer, Integer> dir,
-                                                 HashMap<Integer, Sprite> spriteLocations) {
-        //Remove old coordinates
-        spriteLocations.remove(seg.getToken());
+    public void moveSnake(LinkedList<Segment> snake, HashMap<Integer, Sprite> spriteLocations,
+                          Pair<Integer, Integer> dir) {
+        //Generate new Coordinates
+        Pair<Integer, Integer> newHeadCoors = snake.getFirst().coordinates;
+        newHeadCoors = new Pair<>( newHeadCoors.getKey() + dir.getKey(), newHeadCoors.getValue() + dir.getValue() );
 
-        //Remove from map
-        map.getChildren().remove(seg.getNode());
+        Segment tail = snake.getLast();
 
-        //Generate new coordinates
-        Pair<Integer, Integer> newCoors = seg.coordinates;
-        newCoors = new Pair<>( newCoors.getKey() + dir.getKey(), newCoors.getValue() + dir.getValue() );
+        //Remove tail from spriteLocations
+        spriteLocations.remove(tail.getToken());
 
-        //Set new coorindates
-        seg.setCoordinates(newCoors.getKey(), newCoors.getValue());
+        //Remove tail from map
+        map.getChildren().remove(tail.getNode());
+
+        //Move tail to start of snake
+        snake.remove(tail);
+        snake.addFirst(tail);
+
+        //Set new Coordinates
+        tail.setCoordinates(newHeadCoors.getKey(), newHeadCoors.getValue());
 
         //Add back to map
-        addSpriteToMap(seg);
+        addSpriteToMap(tail);
 
         //Add back to spriteLocations
-        spriteLocations.put(seg.getToken(), seg);
-    }
-
-    /**
-     * Moves each body segments of the snake
-     * @param snake snake
-     * @param spriteLocations Location of all sprites in play field
-     * @param oldHeadCoors Old coordinates of the snakes head
-     */
-    public void moveSnakeBody
-            (LinkedList<Segment> snake, HashMap<Integer, Sprite> spriteLocations, Pair<Integer, Integer> oldHeadCoors) {
-
-        Pair<Integer, Integer> dir;
-
-        //Snake segment in front of segment we're moving
-        Segment seg;
-        Pair<Integer, Integer> oldParentCoors = oldHeadCoors;
-
-        //Move each segment of the snake
-        for ( int i = 1; i < snake.size(); i++ ) {
-            //Get next segment to move
-            seg = snake.get(i);
-            //Calculate direction to move using parent's old coordinates
-            int x = oldParentCoors.getKey() - seg.getX();
-            int y = oldParentCoors.getValue() - seg.getY();
-            dir = new Pair<>(x, y);
-
-            //Save coordinates for next segment to use
-            oldParentCoors = seg.coordinates;
-
-            //Update position
-            updatePosition(seg, dir, spriteLocations);
-        }
+        spriteLocations.put(tail.getToken(), tail);
     }
 
     /**
