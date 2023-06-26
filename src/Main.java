@@ -24,6 +24,8 @@ public class Main extends Application {
 
     //Play field
     GridPane map = new GridPane();
+
+    ArrayList<Pair<Integer, Integer>> possibleSpaces = new ArrayList<>(352);
     //Directions snake can move in
     enum DIR {LEFT, RIGHT, UP, DOWN}
 
@@ -120,10 +122,12 @@ public class Main extends Application {
          */
 
         //Populate spriteLocations with null values
-        //Populate hashMap for possible spaces
+        //Populate possibleSpaces
         for ( int y = 0; y < 16; y++ ) {
             for ( int x = 0; x < 22; x++ ) {
                 spriteLocations.put( tokenizeCoordinates(x, y), null );
+
+                possibleSpaces.add(new Pair<>(x, y));
             }
         }
 
@@ -145,7 +149,7 @@ public class Main extends Application {
         }
 
         //Generate initial apple
-        generateApplePos(apple, spriteLocations);
+        generateApplePos(apple, spriteLocations, snake);
 
         //Create listener for user input
         scene.setOnKeyPressed(event -> {
@@ -256,7 +260,7 @@ public class Main extends Application {
                             scoreCounter.setText("Score: " + score);
 
                             //Move apple
-                            generateApplePos(apple, spriteLocations);
+                            generateApplePos(apple, spriteLocations, snake);
                         }
                     }
                 }
@@ -287,26 +291,48 @@ public class Main extends Application {
      * @param apple Apple to be spawned
      * @param spriteLocations Location of all sprites in play field
      */
-    public void generateApplePos(Apple apple, HashMap<Integer, Sprite> spriteLocations) {
+    public void generateApplePos(Apple apple, HashMap<Integer, Sprite> spriteLocations, LinkedList<Segment> snake) {
+        int segX;
+        int segY;
+        int index;
+        Pair<Integer, Integer> oldCoors = apple.getCoordinates();
+        ArrayList<Pair<Integer, Integer>> emptyCells = cloneArrayList(possibleSpaces);
+        Deque<Pair<Integer, Integer>> occupiedCells = new ArrayDeque<>();
+
+        for ( Segment seg : snake ) {
+
+            //Retrieve position of segment
+            segX = GridPane.getColumnIndex(seg.getNode());
+            segY = GridPane.getRowIndex(seg.getNode());
+
+            //Get index of segment in possibleSpaces ArrayList
+            index = (segY*22) + segX;
+
+            //Remove from emptyCells list
+            occupiedCells.add(possibleSpaces.get(index));
+        }
+
+        while ( !occupiedCells.isEmpty() ) {
+            //Remove all occupied cells
+            emptyCells.remove(occupiedCells.poll());
+        }
 
         Random rand = new Random();
-        int xCoor;
-        int yCoor;
-        int coordinateToken;
+        Pair<Integer, Integer> coordinates;
 
-        do {
-            xCoor = rand.nextInt(22);
-            yCoor = rand.nextInt(16);
-            coordinateToken = tokenizeCoordinates(xCoor, yCoor);
-        } while ( spriteLocations.get(coordinateToken) != null );
+        //Generate random index to choose for coordinates
+        index = rand.nextInt(emptyCells.size());
 
-        //Update position in map
-        spriteLocations.put(coordinateToken, apple);
+        //Get new coordinates for apple
+        coordinates = emptyCells.get(index);
 
-        //Set new coordinates
-        apple.setCoordinates(xCoor, yCoor);
+        //Add apple to hashMap
+        spriteLocations.put(tokenizeCoordinates(coordinates), apple);
 
-        //Remove apple if on gridpane
+        //Set new coordinates for the apple
+        apple.setCoordinates(coordinates.getKey(), coordinates.getValue());
+
+        //Remove apple if on gridPane
         map.getChildren().remove(apple.getNode());
 
         //Place apple back on gridPane
@@ -315,6 +341,11 @@ public class Main extends Application {
         //Align apple
         GridPane.setHalignment(apple.getNode(), HPos.CENTER);
         GridPane.setValignment(apple.getNode(), VPos.CENTER);
+
+        //Ensure new apple spot generates
+        if ( oldCoors != null && oldCoors.equals(apple.getCoordinates())) {
+            generateApplePos(apple, spriteLocations, snake);
+        }
     }
 
     /**
@@ -495,5 +526,26 @@ public class Main extends Application {
 
         //Add to gridPane
         map.add(sprite.getNode(), xCoor, yCoor);
+    }
+
+    /**
+     * Used to clone possible spaces list
+     * @param parent possibleSpaces list
+     * @return clone of possible spaces
+     */
+    public ArrayList<Pair<Integer, Integer>> cloneArrayList(ArrayList<Pair<Integer, Integer>> parent) {
+        ArrayList<Pair<Integer, Integer>> clone = new ArrayList<>(352);
+        Pair<Integer, Integer> newPair;
+        int index;
+
+        for ( int i = 0; i < 16; i++ ) {
+            for ( int j = 0; j < 22; j++ ) {
+                index = (i*22) + j;
+                newPair = new Pair<>(parent.get(index).getKey(), parent.get(index).getValue());
+                clone.add(newPair);
+            }
+        }
+
+        return clone;
     }
 }
