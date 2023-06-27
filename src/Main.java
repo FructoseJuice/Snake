@@ -175,7 +175,7 @@ public class Main extends Application {
 
             //Timing variables
             int timer = 0;
-            final short speed = 6;
+            final short speed = 7;
 
             //Game variables
             DIR currentDir = DIR.DOWN;
@@ -426,7 +426,7 @@ public class Main extends Application {
         map.getChildren().remove(tail.getNode());
 
         //Move tail to start of snake
-        snake.remove(tail);
+        snake.removeLast();
         snake.addFirst(tail);
 
         //Set new Coordinates
@@ -506,14 +506,10 @@ public class Main extends Application {
     public ArrayList<Pair<Integer, Integer>> cloneArrayList(ArrayList<Pair<Integer, Integer>> parent) {
         ArrayList<Pair<Integer, Integer>> clone = new ArrayList<>(352);
         Pair<Integer, Integer> newPair;
-        int index;
 
-        for ( int i = 0; i < 16; i++ ) {
-            for ( int j = 0; j < 22; j++ ) {
-                index = (i*22) + j;
-                newPair = new Pair<>(parent.get(index).getKey(), parent.get(index).getValue());
-                clone.add(newPair);
-            }
+        for ( int i = 0; i < 352; i++ ) {
+            newPair = new Pair<>(parent.get(i).getKey(), parent.get(i).getValue());
+            clone.add(newPair);
         }
 
         return clone;
